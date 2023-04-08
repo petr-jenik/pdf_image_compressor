@@ -1,3 +1,9 @@
+######################################################################################
+# PDF Image Compressor
+# Author: Petr Jenik
+# License: MIT (https://opensource.org/licenses/MIT)
+######################################################################################
+
 import argparse
 from PyPDF2 import PdfReader
 import sys
