@@ -1,4 +1,5 @@
-from pypdf import PdfReader
+import argparse
+from PyPDF2 import PdfReader
 import sys
 from PIL import Image
 import os
@@ -6,18 +7,7 @@ import os
 IMAGE_QUALITY = 90
 RESIZE_CONSTANT = 0.4
 
-if __name__ == "__main__":
-    if len(sys.argv) < 3:
-        print(f"Usage: {sys.argv[0]} <input PDF file> <output directory> <optional: rotation angle e.g, -90, 90>")
-        exit(1)
-
-    input_file_name = sys.argv[1]
-    output_directory_name = sys.argv[2]
-
-    rotation_angle = None
-    if len(sys.argv) == 4:
-        rotation_angle = int(sys.argv[3])
-
+def compress_images_from_pdf(input_file_name, output_file_name, output_directory_name, rotation_angle=None):
     try: 
         os.mkdir(output_directory_name)
     except OSError as error: 
@@ -28,16 +18,14 @@ if __name__ == "__main__":
     except OSError as error: 
         print(error)
 
-    print("Directory '% s' created" % output_directory_name)
-
+    print(f"Directory '{output_directory_name}' created")
 
     # Extract images from PDF
     reader = PdfReader(input_file_name)
 
     compressed_images = []
 
-    for i,page in enumerate(reader.pages):
-        #page = [0]
+    for i, page in enumerate(reader.pages):
         count = 0
 
         for image_file_object in page.images:
@@ -49,7 +37,7 @@ if __name__ == "__main__":
                 fp.write(image_file_object.data)
                 count += 1
 
-            # Open uncoipressed files and compress them
+            # Open uncompressed files and compress them
             img_picture = Image.open(file_path).convert("RGB")
 
             # Rotate image if needed
@@ -57,8 +45,8 @@ if __name__ == "__main__":
                 img_picture = img_picture.rotate(rotation_angle, Image.NEAREST, expand = 1)
 
             # Resize picture
-            x,y = img_picture.size
-            img_picture = img_picture.resize((int(x * RESIZE_CONSTANT),int(y * RESIZE_CONSTANT)), Image.ANTIALIAS)
+            x, y = img_picture.size
+            img_picture = img_picture.resize((int(x * RESIZE_CONSTANT), int(y * RESIZE_CONSTANT)), Image.ANTIALIAS)
 
             # Lower the quality
             compressed_file_name = os.path.join(os.path.join(output_directory_name, "tmp"), file_name)
@@ -66,7 +54,23 @@ if __name__ == "__main__":
 
             compressed_images.append(Image.open(compressed_file_name).convert("RGB"))
 
-    #img_picture = Image.open(all_image_list[0]) #.convert("RGB")
-    compressed_images[0].save(r'my_images.pdf', save_all=True, append_images=compressed_images[1:])
+    # Save compressed images as a PDF
+    compressed_images[0].save(output_file_name, save_all=True, append_images=compressed_images[1:])
 
 
+if __name__ == "__main__":
+    # Define command-line arguments using argparse
+    parser = argparse.ArgumentParser(description="Compress images from a PDF file")
+    parser.add_argument("input_file", type=str, help="Input PDF file")
+    parser.add_argument("output_file", type=str, help="Output PDF file")
+    parser.add_argument("output_dir", type=str, help="Output directory")
+    parser.add_argument("-r", "--rotation_angle", type=int, default=None, help="Optional rotation angle (in degrees) for images")
+    args = parser.parse_args()
+
+    # Extract command-line arguments
+    input_file_name = args.input_file
+    output_file_name = args.output_file
+    output_directory_name = args.output_dir
+    rotation_angle = args.rotation_angle
+
+    compress_images_from_pdf(input_file_name, output_file_name, output_directory_name, rotation_angle)
